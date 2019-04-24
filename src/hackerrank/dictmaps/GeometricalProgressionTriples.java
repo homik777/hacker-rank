@@ -45,11 +45,14 @@ public class GeometricalProgressionTriples {
             cachedMeta.putIfAbsent(arr.get(i), new NumberMetaData(arr.get(i)));
             cachedMeta.get(arr.get(i)).incTotal();
 
-            if(cachedMeta.containsKey(a2)){
-                dontInclude += cachedMeta.get(a2).getTotal();
-            }
-            if(cachedMeta.containsKey(a3)){
-                dontInclude += cachedMeta.get(a3).getTotal();
+            NumberMetaData excludeA2 = cachedMeta.get(a2);
+            NumberMetaData excludeA3 = cachedMeta.get(a3);
+            if(excludeA2 != null && excludeA3 != null){
+                dontInclude += excludeA2.getTotal()*excludeA3.getTotal();
+            }else if(excludeA2 == null && excludeA3 != null){
+                dontInclude += excludeA3.getTotal();
+            }else if(excludeA2 != null){
+                dontInclude += excludeA2.getTotal();
             }
         }
 
@@ -65,9 +68,10 @@ public class GeometricalProgressionTriples {
                 Long a3 = a2*r;
                 if(cachedMeta.containsKey(a2) && cachedMeta.containsKey(a3)){
                     count += newtonExpression(number.getTotal() ,1L)*newtonExpression(cachedMeta.get(a2).getTotal() ,1L)*newtonExpression(cachedMeta.get(a3).getTotal(),1L);
-                    count -= dontInclude;
+
                 }
             }
+            count -= dontInclude;
         }
         return count;
     }
