@@ -1,56 +1,92 @@
 package hackerrank.dictmaps;
 
+import util.PathDefines;
+
 import java.io.*;
+import java.math.BigInteger;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.*;
 
-import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
 
 public class GeometricalProgressionTriples {
+
+    public static class NumberMetaData{
+        private Long number;
+        private Long total = 0L;
+
+        NumberMetaData(Long number){
+            this.number = number;
+        }
+
+        public Long getNumber() {
+            return number;
+        }
+
+        public Long getTotal() {
+            return total;
+        }
+
+        public void incTotal() {
+            this.total++;
+        }
+
+    }
     // Complete the countTriplets function below.
     static long countTriplets(List<Long> arr, long r) {
-        AtomicLong count = new AtomicLong();
-        Map<Long, Long> cache = new HashMap<>();
-        Set<Long> simpleLongSet = new TreeSet<>();
-        for (Long x : arr) {
-            cache.merge(x, 1L, (a, b) -> a + b);
-            simpleLongSet.add(x);
-        }
+        Long count = 0L;
+        Long dontInclude = 0L;
+        Map<Long, NumberMetaData> cachedMeta = new HashMap<>();
 
-        if(r == 1L){
-            System.out.println(Long.MAX_VALUE);
-            System.out.println(factorial(cache.get(1L)));
-            simpleLongSet.forEach(a -> count.addAndGet(factorial(cache.get(a)) / (factorial(3L) * factorial(cache.get(a) - 3))));
-            return count.get();
-        }
+        for (int i = 0; i < arr.size(); ++i) {
+            long a2 = arr.get(i)*r;
+            long a3 = a2*r;
+            cachedMeta.putIfAbsent(arr.get(i), new NumberMetaData(arr.get(i)));
+            cachedMeta.get(arr.get(i)).incTotal();
 
-        Long[] triples = new Long[3];
-        for (long x : simpleLongSet) {
-            Long q1 = x * r;
-            Long q2 = x * r * r;
-            triples[0] = cache.get(x);
-            triples[1] = cache.getOrDefault(q1, 0L);
-            triples[2] = cache.getOrDefault(q2, 0L);
-            if(triples[1] == 0 || triples[2] == 0){
-                continue;
+            if(cachedMeta.containsKey(a2)){
+                dontInclude += cachedMeta.get(a2).getTotal();
             }
-            count.addAndGet(factorial(triples[0]) * factorial(triples[1]) * factorial(triples[2]));
+            if(cachedMeta.containsKey(a3)){
+                dontInclude += cachedMeta.get(a3).getTotal();
+            }
         }
-        return count.get();
+
+        if (r == 1L) {
+            for (NumberMetaData number : cachedMeta.values()) {
+                Long n = number.getTotal();
+                count += newtonExpression(n, 3L);
+            }
+
+        }else{
+            for(NumberMetaData number: cachedMeta.values()){
+                Long a2 = number.getNumber() * r;
+                Long a3 = a2*r;
+                if(cachedMeta.containsKey(a2) && cachedMeta.containsKey(a3)){
+                    count += newtonExpression(number.getTotal() ,1L)*newtonExpression(cachedMeta.get(a2).getTotal() ,1L)*newtonExpression(cachedMeta.get(a3).getTotal(),1L);
+                    count -= dontInclude;
+                }
+            }
+        }
+        return count;
     }
 
-    public static Long factorial(Long a) {
-        final Long[] start = {1L};
-        LongStream.range(1L, a).boxed().forEach(r -> start[0] = r*a);
-        return start[0];
+    public static Long newtonExpression(Long n, Long k) {
+        Long start = n-(k-1);
+        Long result = 1L, temp = 1L;
+        for (long i = start; i <= n; ++i) {
+            result = result*i;
+        }
+        for (long i = 1; i <= k; ++i){
+            temp = temp*i;
+        }
+        return result/temp;
     }
 
     public static void main(String[] args) throws IOException {
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
-        BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(System.getenv("OUTPUT_PATH")));
+        BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(PathDefines.OUT_PUT_PATH + File.pathSeparator + "geo_progess.txt"));
 
         String[] nr = bufferedReader.readLine().replaceAll("\\s+$", "").split(" ");
 
@@ -63,7 +99,7 @@ public class GeometricalProgressionTriples {
                 .collect(toList());
 
         long ans = countTriplets(arr, r);
-
+        System.out.println(ans + "");
         bufferedWriter.write(String.valueOf(ans));
         bufferedWriter.newLine();
 
